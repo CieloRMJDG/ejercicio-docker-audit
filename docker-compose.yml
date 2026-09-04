@@ -1,14 +1,70 @@
 services:
-  app:
-    build: .
-    container_name: technova-api
-    ports:
-      - "5050:5050"
-    environment:
-      - DB_HOST=${DB_HOST:-servidor-bd-ejemplo}
-      - DB_USER=${DB_USER:-root}
-      - DB_PASS=${DB_PASS:-}
-      - DB_NAME=${DB_NAME:-legacydb}
-      - FLASK_DEBUG=false
-      - PORT=5050
+  db:
+    image: mysql:8.0
+    container_name: technova-db
     restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-TechNovaRoot2026}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-techvna_db}
+      - MYSQL_USER=${MYSQL_USER:-techuser}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-TechNova2026}
+    volumes:
+      - ./db-data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pTechNovaRoot2026"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [internal]
+
+  app:
+    image: sky2712/technova-api:latest
+    container_name: technova-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DB_HOST=${DB_HOST:-db}
+      - DB_USER=${DB_USER:-techuser}
+      - DB_PASS=${DB_PASS:-TechNova2026}
+      - DB_NAME=${DB_NAME:-techvna_db}
+    networks: [internal]
+
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks: [internal]
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma
+    restart: unless-stopped
+    volumes:
+      - ./uptime-kuma-data:/app/data
+    networks: [internal]
+
+  proxy-manager:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: proxy-manager
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "81:81"
+      - "443:443"
+    environment:
+      - DISABLE_IPV6=true
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-Cambiar123!}
+    volumes:
+      - ./npm-data:/data
+      - ./npm-letsencrypt:/etc/letsencrypt
+    networks: [internal]
+
+networks:
+  internal:
+    driver: bridge

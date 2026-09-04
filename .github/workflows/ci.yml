@@ -89,4 +89,4 @@ jobs:
             cd /opt/technova
             docker compose up -d
             sleep 3
-            docker compose restart nginx
+            docker compose restart proxy-manager
