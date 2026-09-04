@@ -74,12 +74,16 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
+      - name: Preparar clave SSH desde base64
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" | base64 --decode > "$RUNNER_TEMP/ec2_key.pem"
+          chmod 600 "$RUNNER_TEMP/ec2_key.pem"
       - name: Conectar por SSH y desplegar
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key_path: ${{ runner.temp }}/ec2_key.pem
           script: |
             docker pull ${{ env.IMAGE_NAME }}:latest
             cd /opt/technova
