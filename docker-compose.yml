@@ -1,0 +1,14 @@
+services:
+  app:
+    build: .
+    container_name: technova-api
+    ports:
+      - "5050:5050"
+    environment:
+      - DB_HOST=${DB_HOST:-servidor-bd-ejemplo}
+      - DB_USER=${DB_USER:-root}
+      - DB_PASS=${DB_PASS:-}
+      - DB_NAME=${DB_NAME:-legacydb}
+      - FLASK_DEBUG=false
+      - PORT=5050
+    restart: unless-stopped
